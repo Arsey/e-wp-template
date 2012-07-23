@@ -1,79 +1,233 @@
 <?php
+/* For adding custop settings for theme we need to use next file */
+/* ------------------------------------------------------------- */
+#include('theme-options.php');
+
+
+
+/* WORK WITH I-M-A-G-E-S */
+/* For add theme support thumbnails */
+/* ------------------------------------------------------------- */
 if (function_exists('add_theme_support')) {
     add_theme_support('post-thumbnails');
     set_post_thumbnail_size(150, 150); // default Post Thumbnail dimensions
 }
 
 
-if (function_exists('add_image_size')) {
-   // add_image_size('portfolio', 220, 134);
+/* If we need some custom cropped images after downloading to server we need to use */
+/* ------------------------------------------------------------- */
+#if (function_exists('add_image_size')) {
+#   add_image_size('some-size', $width, $height);
+#}
 
-}
+/* this function display image of any post if it has thumbnail or attachments */
+/* ------------------------------------------------------------- */
+/* function get_image_any_case($id,$size) {
+  if (function_exists("has_post_thumbnail") && has_post_thumbnail()) {
+  echo get_the_post_thumbnail($id, $size);
+  } else {
+  $args = array(
+  'post_type' => 'attachment',
+  'numberposts' => 1,
+  'post_mime_type' => 'image',
+  'post_parent' => $id,
+  'sort_order' => 'menu_order'
+  );
+  $attachments = get_posts($args);
+  if ($attachments) {
+  $title = htmlspecialchars($attachments[0]->post_title);
+  echo '<img src="', wp_get_attachment_thumb_url($attachments[0]->ID), '" class=""  alt="', $title, '" title="', $title, '" />';
+  }
+  }
+  } */
 
-if (function_exists('register_sidebars')) {
-    //register_sidebars(4);
-}
+/* WORK WITH M-E-N-U-S */
+/* For using dynamic menus */
+/* ------------------------------------------------------------- */
+#add_action('init', 'register_custom_menus');
+#function register_custom_menus() {
+#    register_nav_menu('main_menu', __('Main Menu'));
+#    register_nav_menu('footer_menu', __('Footer Menu'));
+#}
 
-if (!function_exists('centita_posted_on')) :
 
-    function centita_posted_on() {
 
-        $cat_name = get_the_category();
-        $comments_number = comments_number('No Comments', 'One Comment', '% Comments');
+/* WORK WITH S-I-D-E-B-A-R-S */
+#if (function_exists('register_sidebar')) {
+#    register_sidebar(array(
+#        'name' => 'One',
+#        'id' => 'one-sidebar',
+#    ));
+#    register_sidebar(array(
+#        'name' => 'One another sidebar',
+#        'id' => 'one-another-sidebar',
+#    ));
+#}
 
-        printf(__('<span class="posted-detail">%1$s&nbsp&nbsp|&nbsp&nbsp' . $cat_name[0]->name . '&nbsp&nbsp|&nbsp&nbsp' . get_the_author() . '&nbsp&nbsp|&nbsp&nbsp' . $comments_number . '</span>', 'centita'), sprintf('%1$s', get_the_date())
-        );
+
+/* O-T-H-E-R      F-U-N-C-T-I-O-N-S */
+
+/*this function cut any text to max length*/
+function cut_text($string, $max_length) {
+    if (strlen($string) > $max_length) {
+        $string = mb_substr($string, 0, $max_length);
+        $pos = strrpos($string, " ");
+        if ($pos === false) {
+            return mb_substr($string, 0, $max_length) . "...";
+        }
+        return mb_substr($string, 0, $pos) . "...";
+    } else {
+        return $string;
     }
+}
 
-endif;
+/* function for pagination links on posts in loop */
 
-function register_custom_menu() {
-    register_nav_menu('custom_menu', __('Custom Menu'));
+function pagination($title = 'Page:&nbsp;&nbsp;', $mux_num_pages, $type = 'plain') {
+    if ($mux_num_pages > 1) {
+        echo '<div class="pagination">' . $title;
 
+        global $wp_query;
+        $big = 999999999; // need an unlikely integer
+        $pagination = paginate_links(array(
+            'base' => str_replace($big, '%#%', get_pagenum_link($big)),
+            'format' => '?paged=%#%',
+            'current' => max(1, get_query_var('paged')),
+            'total' => $mux_num_pages,
+            'prev_next' => false,
+            'type' => $type,
+                ));
+
+        if ($type == 'plain') {
+            echo $pagination;
+        } else if ($type = 'array') {
+            foreach ($pagination as $link) {
+                echo preg_replace('~<a~', "$0 rel=nofollow ", $link);
+            }
+        }
+        ?>
+        </div>
+        <?php
+    }
+}
+
+/* this function return count of posts in category */
+
+function wt_get_category_count($input = '') {
+    global $wpdb;
+    if ($input == '') {
+        $category = get_the_category();
+        return $category[0]->category_count;
+    } elseif (is_numeric($input)) {
+        $SQL = "SELECT $wpdb->term_taxonomy.count FROM $wpdb->terms, $wpdb->term_taxonomy WHERE $wpdb->terms.term_id=$wpdb->term_taxonomy.term_id AND $wpdb->term_taxonomy.term_id=$input";
+        return $wpdb->get_var($SQL);
+    } else {
+        $SQL = "SELECT $wpdb->term_taxonomy.count FROM $wpdb->terms, $wpdb->term_taxonomy WHERE $wpdb->terms.term_id=$wpdb->term_taxonomy.term_id AND $wpdb->terms.slug='$input'";
+        return $wpdb->get_var($SQL);
+    }
+}
+
+/* this function returning a slag of any posts category */
+
+function get_cat_slug($cat_id) {
+    $cat_id = (int) $cat_id;
+    $category = &get_category($cat_id);
+    return $category->slug;
 }
 
 /*
- *
- *
-        for layoyt custom menu use this:
-        <?php wp_nav_menu(array('menu' => 'custom_menu'));?>
- *
- *
+ * This function return links with pagination of all posts on site
+ * it's return an array. [2] - just a paginated links, [0] - links on posts an paginated links
  */
 
-/*-----------------------------*/
-/*---------SEARCH FORM---------*/
-/*-----------------------------*/
+function arsey_sitemap() {
+    $returning = array();
+    $current_cat_id = $_REQUEST['cid'];
+    if ((!is_numeric($current_cat_id) && isset($_REQUEST['cid']))) {
+        header("HTTP/1.1 301 Moved Permanently");
+        header("Location: " . get_bloginfo('url') . '/sitemap');
+    } else if (!is_array(term_exists(get_cat_slug($current_cat_id), 'category')) && isset($_REQUEST['cid'])) {
+        header("HTTP/1.1 301 Moved Permanently");
+        header("Location: " . get_bloginfo('url') . '/sitemap');
+    }
+    if (isset($_REQUEST['offset']) && $_REQUEST['offset'] != 0) {
+        $q_offset = '&offset=' . $_REQUEST['offset'];
+    }
+    $category_ids = get_all_category_ids();
+    $i = 0;
+    $glc = 0;
+    $max_posts = 500;
+    $b = 0;
+    $links = '';
+    $home = get_settings('home');
+    foreach ($category_ids as $cat_id) {
+        if ($cat_id != 1) {
+            $i++;
+            $glc++;
+            $subpages = 1;
+            if (!$current_cat_id && ($i == 1)) {
+                $current_cat_id = $cat_id;
+            }
 
-    function custom_search_form() {
-    $form = '
-        <div id="search-box">
-            <form role="search" method="get" id="search" action="' . home_url('/') . '" >
-                <p>
-                    <input type="text" class="search-text" value="' . get_search_query() . '" name="s" id="s" onblur="if (this.value == \'\'){this.value = \'Search\'; }" onfocus="if (this.value == \'Search\') {this.value = \'\'; }"/>
-                    <input type="image" class="go" src="' . get_bloginfo('template_directory') . '/img/search-icon.gif" />
-                </p>
-            </form>
-       </div>';
-    $style='
-        <style>
-            #search-box form *{outline:none;}
-            #search-box form p{margin:0;padding:0;position:relative;display:inline-block;zoom:1;*display:inline;}
-            #search-box form p input.search-text{padding: 2px 20px 3px 5px;border-radius: 3px;border: 1px solid grey;}
-            #search-box form p input.go{position:absolute;top: 5px;right: 5px;}
-        </style>';
-    return $form.$style;
+            $count = wt_get_category_count($cat_id);
+            if ($count != 0) {
+                if ($count > $max_posts) {
+                    $subs = ($count - $count % $max_posts) / $max_posts;
+                    if ($subs > 1) {
+                        $subpages = $subs;
+                        if (($count - $count % $max_posts) - $max_posts > 0) {
+                            $subpages++;
+                        }
+                    }
+                }
+
+                $offset = '';
+                $class = '';
+                for ($j = 1; $j <= $subpages; $j++) {
+                    if ($subpages > 1 && $j != 1) {
+                        $glc++;
+                        $offset = '&offset=' . ($max_posts * $j - $max_posts);
+                    }
+                    if ($current_cat_id == $cat_id) {
+                        $class = 'class="active"';
+                    }
+                    $href = $home . '/sitemap/?cid=' . $cat_id . $offset;
+                    $links.='<a ' . $class . ' href="' . $href . '" title="' . get_cat_name($cat_id) . '">' . $glc . '</a><span> | </span>';
+                }
+                $subpages = 1;
+            }
+        }
+    }
+
+    $cat_name = get_cat_name($current_cat_id);
+    $returning[1] = $custom_title = get_the_title() . ' - Раздел ' . $cat_name;
+    ?>
+    <style>
+        .arsey-sitemap{margin-left: 10px;}
+        .arsey-sitemap .sitemap-links a.active{text-decoration: none ;color: grey;font-size: 18px;margin: 0 3px 0px 3px;border-bottom: 0;}
+        .arsey-sitemap .sitemap-links a{color:#000 !important}
+        .arsey-sitemap .sitemap-links a:hover{color:#E95D0F !important;}
+        .arsey-sitemap h3{margin:20px 0;font-size:16px;}
+        .arsey-sitemap .sitemap-links{margin: 10px 0 10px -5px;background: #FBDECF;padding: 4px 9px 6px 5px;font-size: 13px;display: inline-block;border-radius: 4px;border: 1px solid #DFDFDF;box-shadow: 2px 2px 6px #E95D0F;}
+        .arsey-sitemap  .sitemap-list{margin-bottom:20px;}
+    </style>
+    <?php
+    $links = '<div class="sitemap-links">' . $links . '</div>';
+    $sitemap_title = '<h3>Раздел - ' . $cat_name . ':</h3>';
+    $sitemap_list = '';
+
+    $sitemap_query = new WP_Query('showposts=' . $max_posts . '&category__in=' . $current_cat_id . $q_offset);
+
+    while ($sitemap_query->have_posts()) {
+        $sitemap_query->the_post();
+        $b++;
+        $sitemap_list.='<li><a href="' . get_permalink() . '" rel="bookmark" title="Permanent Link to ' . get_the_title() . '">' . get_the_title() . '</a></li>';
+    }
+    wp_reset_query();
+    $sitemap_list = '<ul class="sitemap-list">' . $sitemap_list . '</ul>';
+
+    $returning[0] = '<div class="arsey-sitemap">' . $links . $sitemap_title . $sitemap_list . $links . '</div>';
+    $returning[2] = $links;
+    return $returning;
 }
 
-add_filter('get_search_form', 'custom_search_form');
-
-//////////////////////////////////////////////
-//how to use:   echo custom_search_form();
-//////////////////////////////////////////////
-
-/*-----------------------------*/
-/*---------end of: SEARCH FORM---------*/
-/*-----------------------------*/
-
-
-?>
