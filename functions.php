@@ -22,24 +22,25 @@ if (function_exists('add_theme_support')) {
 
 /* this function display image of any post if it has thumbnail or attachments */
 /* ------------------------------------------------------------- */
-/* function get_image_any_case($id,$size) {
-  if (function_exists("has_post_thumbnail") && has_post_thumbnail()) {
-  echo get_the_post_thumbnail($id, $size);
-  } else {
-  $args = array(
-  'post_type' => 'attachment',
-  'numberposts' => 1,
-  'post_mime_type' => 'image',
-  'post_parent' => $id,
-  'sort_order' => 'menu_order'
-  );
-  $attachments = get_posts($args);
-  if ($attachments) {
-  $title = htmlspecialchars($attachments[0]->post_title);
-  echo '<img src="', wp_get_attachment_thumb_url($attachments[0]->ID), '" class=""  alt="', $title, '" title="', $title, '" />';
-  }
-  }
-  } */
+
+function get_image_any_case($id, $size) {
+    if (function_exists("has_post_thumbnail") && has_post_thumbnail()) {
+        echo get_the_post_thumbnail($id, $size);
+    } else {
+        $args = array(
+            'post_type' => 'attachment',
+            'numberposts' => 1,
+            'post_mime_type' => 'image',
+            'post_parent' => $id,
+            'sort_order' => 'menu_order'
+        );
+        $attachments = get_posts($args);
+        if ($attachments) {
+            $title = htmlspecialchars($attachments[0]->post_title);
+            echo '<img src="', wp_get_attachment_thumb_url($attachments[0]->ID), '" class=""  alt="', $title, '" title="', $title, '" />';
+        }
+    }
+}
 
 /* WORK WITH M-E-N-U-S */
 /* For using dynamic menus */
@@ -65,47 +66,96 @@ if (function_exists('add_theme_support')) {
 #}
 
 
-/* O-T-H-E-R      F-U-N-C-T-I-O-N-S */
 
-/*this function cut any text to max length*/
-function cut_text($string, $max_length) {
-    if (strlen($string) > $max_length) {
-        $string = mb_substr($string, 0, $max_length);
-        $pos = strrpos($string, " ");
-        if ($pos === false) {
-            return mb_substr($string, 0, $max_length) . "...";
+/* WORK WITH C-O-M-M-E-N-T-S */
+if (!function_exists('twentyten_comment')) :
+    function twentyten_comment($comment, $args, $depth) {
+        $GLOBALS['comment'] = $comment;
+        switch ($comment->comment_type) :
+            case '' :
+                ?>
+                <li <?php comment_class(); ?> id="li-comment-<?php comment_ID(); ?>">
+                    <div id="comment-<?php comment_ID(); ?>">
+                        <div class="comment-author vcard">
+                            <?php echo get_avatar($comment, 40); ?>
+                            <?php printf(__('%s <span class="says">says:</span>', 'twentyten'), sprintf('<cite class="fn">%s</cite>', get_comment_author_link())); ?>
+                        </div><!-- .comment-author .vcard -->
+                        <?php if ($comment->comment_approved == '0') : ?>
+                            <em class="comment-awaiting-moderation"><?php _e('Your comment is awaiting moderation.', 'twentyten'); ?></em>
+                            <br />
+                        <?php endif; ?>
+
+                        <div class="comment-meta commentmetadata"><a href="<?php echo esc_url(get_comment_link($comment->comment_ID)); ?>">
+                                <?php
+                                /* translators: 1: date, 2: time */
+                                printf(__('%1$s at %2$s', 'twentyten'), get_comment_date(), get_comment_time());
+                                ?></a><?php edit_comment_link(__('(Edit)', 'twentyten'), ' ');
+                                ?>
+                        </div><!-- .comment-meta .commentmetadata -->
+
+                        <div class="comment-body"><?php comment_text(); ?></div>
+
+                        <div class="reply">
+                            <?php comment_reply_link(array_merge($args, array('depth' => $depth, 'max_depth' => $args['max_depth']))); ?>
+                        </div><!-- .reply -->
+                    </div><!-- #comment-##  -->
+
+                    <?php
+                    break;
+                case 'pingback' :
+                case 'trackback' :
+                    ?>
+                <li class="post pingback">
+                    <p><?php _e('Pingback:', 'twentyten'); ?> <?php comment_author_link(); ?><?php edit_comment_link(__('(Edit)', 'twentyten'), ' '); ?></p>
+                    <?php
+                    break;
+            endswitch;
         }
-        return mb_substr($string, 0, $pos) . "...";
-    } else {
-        return $string;
-    }
-}
+    endif;
 
-/* function for pagination links on posts in loop */
 
-function pagination($title = 'Page:&nbsp;&nbsp;', $mux_num_pages, $type = 'plain') {
-    if ($mux_num_pages > 1) {
-        echo '<div class="pagination">' . $title;
+    /* O-T-H-E-R      F-U-N-C-T-I-O-N-S */
 
-        global $wp_query;
-        $big = 999999999; // need an unlikely integer
-        $pagination = paginate_links(array(
-            'base' => str_replace($big, '%#%', get_pagenum_link($big)),
-            'format' => '?paged=%#%',
-            'current' => max(1, get_query_var('paged')),
-            'total' => $mux_num_pages,
-            'prev_next' => false,
-            'type' => $type,
-                ));
+    /* this function cut any text to max length */
 
-        if ($type == 'plain') {
-            echo $pagination;
-        } else if ($type = 'array') {
-            foreach ($pagination as $link) {
-                echo preg_replace('~<a~', "$0 rel=nofollow ", $link);
+    function cut_text($string, $max_length) {
+        if (strlen($string) > $max_length) {
+            $string = mb_substr($string, 0, $max_length);
+            $pos = strrpos($string, " ");
+            if ($pos === false) {
+                return mb_substr($string, 0, $max_length) . "...";
             }
+            return mb_substr($string, 0, $pos) . "...";
+        } else {
+            return $string;
         }
-        ?>
+    }
+
+    /* function for pagination links on posts in loop */
+
+    function pagination($title = 'Page:&nbsp;&nbsp;', $mux_num_pages, $type = 'plain') {
+        if ($mux_num_pages > 1) {
+            echo '<div class="pagination">' . $title;
+
+            global $wp_query;
+            $big = 999999999; // need an unlikely integer
+            $pagination = paginate_links(array(
+                'base' => str_replace($big, '%#%', get_pagenum_link($big)),
+                'format' => '?paged=%#%',
+                'current' => max(1, get_query_var('paged')),
+                'total' => $mux_num_pages,
+                'prev_next' => false,
+                'type' => $type,
+                    ));
+
+            if ($type == 'plain') {
+                echo $pagination;
+            } else if ($type = 'array') {
+                foreach ($pagination as $link) {
+                    echo preg_replace('~<a~', "$0 rel=nofollow ", $link);
+                }
+            }
+            ?>
         </div>
         <?php
     }
