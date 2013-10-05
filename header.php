@@ -1,13 +1,26 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<!--[if IE 7]>
+<html class="ie ie7" <?php language_attributes(); ?>>
+<![endif]-->
+<!--[if IE 8]>
+<html class="ie ie8" <?php language_attributes(); ?>>
+<![endif]-->
+<!--[if !(IE 7) | !(IE 8)  ]><!-->
+<html <?php language_attributes(); ?>>
+	<!--<![endif]-->
     <head>
-        <?php $tdir = get_bloginfo('template_directory'); ?>
-        <!--        for mobile devices-->
-        <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;">
-            <link rel="stylesheet" href="<?php echo $tdir; ?>/css/reset.css"/>
-            <link rel="stylesheet" href="<?php echo $tdir; ?>/style.css"/>
+		<meta charset="<?php bloginfo('charset'); ?>">
+		<meta name="viewport" content="width=device-width">
 
-            <script src="<?php echo $tdir; ?>/js/libs/jquery-1.7.1.min.js"></script>
-            <script src="<?php echo $tdir; ?>/js/main.js"></script>
-    </head>
-    <body>
+		<title><?php wp_title('|', true, 'right'); ?></title>
+
+		<link rel="pingback" href="<?php bloginfo('pingback_url'); ?>">
+
+		<link rel="stylesheet" href="<?php td(); ?>/css/reset.css">
+		<link rel="stylesheet" href="<?php td(); ?>/style.css">
+		
+		<!--[if lt IE 9]><script src="<?php echo get_template_directory_uri(); ?>/js/html5.js"></script><![endif]-->
+		
+		<?php wp_head(); ?>
+	</head>
+	<body <?php body_class(); ?>>
