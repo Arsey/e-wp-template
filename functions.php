@@ -1,8 +1,8 @@
 <?php
 /* For adding custop settings for theme we need to use next file */
 /* ------------------------------------------------------------- */
-#include('theme-options.php');
-
+//#include('functions/theme-options.php');
+#include('functions/metabox.php');
 
 
 /* WORK WITH I-M-A-G-E-S */
