@@ -1,8 +1,9 @@
 <?php
 /* For adding custop settings for theme we need to use next file */
 /* ------------------------------------------------------------- */
-//#include('functions/theme-options.php');
+#include('functions/theme-options.php');
 #include('functions/metabox.php');
+#include('simple-widget.php');
 
 
 /* WORK WITH I-M-A-G-E-S */
