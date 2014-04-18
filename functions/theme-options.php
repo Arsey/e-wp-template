@@ -86,28 +86,26 @@ function theme_admin() {
                             <?php
                             break;
                         case 'select':
-                            ?>
-                            <tr valign="top">
-                                <th scope="row"><?php echo $value['name']; ?></th>
-                                <td>
-                                    <select name="<?php echo $value['id']; ?>" id="<?php echo $value['id']; ?>">
-                                        <option value="">--</option>
-                                        <?php
-                                        foreach ($value['options'] as $key => $option) {
-                                            if ($key == get_option($value['id'], $value['std'])) {
-                                                $selected = "selected=\"selected\"";
-                                            } else {
-                                                $selected = "";
-                                            }
-                                            ?>
-                                            <option value="<?php echo $key ?>" <?php echo $selected ?>>
-                                                <?php echo $option; ?></option>
-                                        <?php } ?>
-                                    </select>
-                                    <?php echo $value['desc']; ?>
-                                </td>
-                            </tr>
-                            <?php
+				?>
+				<label for="<?php echo $value['id']; ?>">
+				<?php echo $value['name']; ?>
+					<select name="<?php echo $value['id']; ?>" id="<?php echo $value['id']; ?>">
+						<option value="">--</option>
+						<?php
+							foreach ($value['options'] as $key => $option) {
+								if ($key == get_option($value['id'], $value['std'])) {
+									$selected = "selected=\"selected\"";
+								} else {
+									$selected = "";
+								}
+						?>
+						<option value="<?php echo $key ?>" <?php echo $selected ?>>
+						<?php echo $option; ?></option>
+						<?php } ?>
+							</select>
+							</label>
+			<?php echo $value['desc']; ?>
+			<?php
                             break;
 
 
