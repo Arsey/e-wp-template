@@ -1,5 +1,11 @@
 <?php
-
+/**
+ * type can be:
+ * "box_begin" - begin of separate box
+ * "box_end" - end of separate box
+ * "text" - text input
+ * "textarea" - textarea
+ */
 return array(
 	array(
 		'name' => 'Box Begin',
